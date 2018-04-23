@@ -13,6 +13,7 @@ void InitAQueue(AQueue *Q)
 {
     Q->front = 0;
     Q->rear = 0;
+    Q->data_size = 0;
 }
 
 /**
@@ -22,7 +23,15 @@ void InitAQueue(AQueue *Q)
  *	@return		 : None
  *  @notice      : None
  */
-void InitLQueue(LQueue *Q);
+void InitLQueue(LQueue *Q)
+{
+    Q->front = (Node*)malloc(sizeof(Node));
+    if(Q->front)
+    {
+        Q->rear = Q->front;
+        Q->front->next = NULL;
+    }
+}
 /**
  *  @name        : void DestoryAQueue(AQueue *Q)
  *	@description : 销毁队列
@@ -44,7 +53,19 @@ void DestoryAQueue(AQueue *Q)
  *	@return		 : None
  *  @notice      : None
  */
-void DestoryLQueue(LQueue *Q);
+void DestoryLQueue(LQueue *Q)
+{
+    while(Q->front)
+    {
+        Q->rear = Q->front->next;
+        free(Q->front);
+        Q->front = Q->rear;
+        if(!Q->rear)
+        free(Q->rear);
+    }
+    free(Q->front);
+
+}
 
 /**
  *  @name        : Status IsFullAQueue(const AQueue *Q)
@@ -66,7 +87,7 @@ Status IsFullAQueue(const AQueue *Q)
  */
 Status IsEmptyAQueue(const AQueue *Q)
 {
-    return Q->front == Q->rear ? 1 : 0;
+    return Q->front == Q->rear ? TRUE : FLASE;
 }
 
 /**
@@ -76,7 +97,12 @@ Status IsEmptyAQueue(const AQueue *Q)
  *	@return		 : 空-TRUE; 未空-FLASE
  *  @notice      : None
  */
-Status IsEmptyLQueue(const LQueue *Q);
+Status IsEmptyLQueue(const LQueue *Q)
+{
+    if(Q->front == Q->rear)
+        return TRUE;
+    return FLASE;
+}
 
 /**
  *  @name        : Status GetHeadAQueue(AQueue *Q, void *e)
@@ -102,7 +128,13 @@ Status GetHeadAQueue(AQueue *Q, void *e)
  *	@return		 : 成功-TRUE; 失败-FLASE
  *  @notice      : 队列是否空
  */
-Status GetHeadLQueue(LQueue *Q, void *e);
+Status GetHeadLQueue(LQueue *Q, void *e)
+{
+    if(IsEmptyLQueue(Q))
+        return FLASE;
+    e = Q->front->data;
+    return TRUE;
+}
 
 /**
  *  @name        : int LengthAQueue(AQueue *Q)
@@ -123,7 +155,10 @@ int LengthAQueue(AQueue *Q)
  *	@return		 : 队列长度count
  *  @notice      : None
  */
-int LengthLQueue(LQueue *Q);
+int LengthLQueue(LQueue *Q)
+{
+
+}
 
 /**
  *  @name        : Status EnAQueue(AQueue *Q, void *data)
@@ -140,6 +175,7 @@ Status EnAQueue(AQueue *Q, void *data)
     }
     Q->data[Q->rear] = data;
     Q->rear = (Q->rear + 1) % MAXQUEUE;
+    Q->data_size += sizeof(data);
     return TRUE;
 }
 
@@ -150,7 +186,18 @@ Status EnAQueue(AQueue *Q, void *data)
  *	@return		 : 成功-TRUE; 失败-FLASE
  *  @notice      : 队列是否为空
  */
-Status EnLQueue(LQueue *Q, void *data);
+Status EnLQueue(LQueue *Q, void *data)
+{
+    Node *p = (Node*)malloc(sizeof(Node));
+    if(!p)
+    {
+        return FLASE;
+    }
+    p->data = data;
+    p->next = NULL;
+    Q->rear->next = p;
+    Q->rear = p;
+}
 
 /**
  *  @name        : Status DeAQueue(AQueue *Q)
@@ -165,7 +212,9 @@ Status DeAQueue(AQueue *Q)
     {
         return FLASE;
     }
-    printf("%d",Q->data[Q->front]);
+    Q->data_size -= sizeof(Q->data[Q->front]);
+    Q->data[Q->front] = NULL;
+//    printf("%d", Q->data[Q->front]);
     Q->front = (Q->front + 1) % MAXQUEUE;
     return TRUE;
 }
@@ -177,7 +226,23 @@ Status DeAQueue(AQueue *Q)
  *	@return		 : 成功-TRUE; 失败-FLASE
  *  @notice      : None
  */
-Status DeLQueue(LQueue *Q);
+Status DeLQueue(LQueue *Q)
+{
+    Node *p;
+    if(Q->rear == Q->front)
+    {
+        return FLASE;
+    }
+
+    p = Q->front->next;
+    Q->front->next = p->next;
+    if(Q->rear == p)
+    {
+        Q->rear = Q->front;
+    }
+    free(p);
+    return TRUE;
+}
 
 /**
  *  @name        : void ClearAQueue(AQueue *Q)
@@ -198,7 +263,11 @@ void ClearAQueue(AQueue *Q)
  *	@return		 : None
  *  @notice      : None
  */
-void ClearLQueue(LQueue *Q);
+void ClearLQueue(LQueue *Q)
+{
+    Q->front = Q->rear = NULL;
+    Q->data_size = 0;
+}
 
 /**
  *  @name        : Status TraverseAQueue(const AQueue *Q, void (*foo)(void *q))
@@ -229,7 +298,17 @@ Status TraverseAQueue(const AQueue *Q, void (*foo)(void *q))
  *	@return		 : None
  *  @notice      : None
  */
-Status TraverseLQueue(const LQueue *Q, void (*foo)(void *q));
+Status TraverseLQueue(const LQueue *Q, void (*foo)(void *q))
+{
+    Node *p = Q->front->next;
+    printf("顺序输出\n");
+    while(p)
+    {
+        printf("%d", p->data);
+        p = p->next;
+    }
+    printf("\n");
+}
 
 /**
  *  @name        : void APrint(void *q)
@@ -240,7 +319,7 @@ Status TraverseLQueue(const LQueue *Q, void (*foo)(void *q));
  */
  void APrint(void *q)
  {
-     int choice, c = 0, flag = 0;
+     int choice, c = 0, flag = 1;
      void *p = q;
      printf("请输入队列元素的类型\n");
      while(flag)
@@ -269,14 +348,35 @@ Status TraverseLQueue(const LQueue *Q, void (*foo)(void *q));
  *	@return		 : None
  *  @notice      : None
  */
- void LPrint(void *q);
+ void LPrint(void *q)
+ {
+    int choice, c = 0, flag = 1;
+     void *p = q;
+     printf("请输入队列元素的类型\n");
+     while(flag)
+     {
+         printf("\t1.字符型\n\t2.整形\n\t3.浮点型");
+         scanf("%d", &c);
+         switch(c)
+        {
+            case 1:printf("%c", *(char*)p); //字符型
+                   flag=0;break;
+            case 2:printf("%d", *(int*)p); //整形
+                   flag=0;break;
+            case 3:printf("%f", *(float*)p); //浮点型
+                   flag=0;break;
+            default:printf("输入错误\n");
+        }
+     }
+ }
  void aQueue()
  {
      AQueue AQ;
-     LQueue LQ;
-     int c, head, num, ch, intt, fl, input;
+     int c, num, ch, intt, fl, input;
+     void *head;
      do
     {
+        printf("\n\n");
         printf("\t1.初始化队列\n");
         printf("\t2.销毁队列\n");
         printf("\t3.检查队列是否已满\n");
@@ -306,18 +406,19 @@ Status TraverseLQueue(const LQueue *Q, void (*foo)(void *q));
         case 4: if(IsEmptyAQueue(&AQ))printf("队列为空\n");
                 else printf("队列不为空\n");
                 break;
-        case 5: if(GetHeadAQueue(&AQ,&head))
+        case 5: if(GetHeadAQueue(&AQ,head))
                 {
-                    APrint(&head);
+                    APrint(head);
                 }
                 else printf("获取失败\n");
                 break;
         case 6: printf("队列长度为:%d",LengthAQueue(&AQ));
                 break;
-        case 7: printf("请输入入队元素的类型\n");
-                printf("\t1.字符型\n\t2.整形\n\t3.浮点型");
+        case 7: printf("\t请输入入队元素的类型\n");
+                printf("\t1.字符型\n\t2.整形\n\t3.浮点型\n\t");
                 scanf("%d", &num);
-                switch(c)
+                printf("请输入数据:\n");
+                switch(num)
                 {
                     case 1:scanf("%c",&ch); //字符型
                            if(EnAQueue(&AQ,&ch))
@@ -325,13 +426,13 @@ Status TraverseLQueue(const LQueue *Q, void (*foo)(void *q));
                             else
                                 printf("入队失败\n");
                            break;
-                    case 2:printf("%d",&intt); //整形
+                    case 2:scanf("%d",&intt); //整形
                             if(EnAQueue(&AQ,&intt))
                                 printf("入队成功\n");
                             else
                                 printf("入队失败\n");
                            break;
-                    case 3:printf("%f",&fl); //浮点型
+                    case 3:scanf("%f",&fl); //浮点型
                            if(EnAQueue(&AQ,&fl))
                                 printf("入队成功\n");
                             else
@@ -352,6 +453,7 @@ Status TraverseLQueue(const LQueue *Q, void (*foo)(void *q));
                  printf("遍历成功\n");
                  else
                  printf("遍历失败\n");
+                 break;
         case 11: break;
         default: printf("输入的数字不正确\n");
                  break;
@@ -360,7 +462,88 @@ Status TraverseLQueue(const LQueue *Q, void (*foo)(void *q));
  }
  void lQueue()
  {
-
+     LQueue LQ;
+     int c, num, ch, intt, fl, input;
+     void *head;
+     do
+    {
+        printf("\n\n");
+        printf("\t1.初始化队列\n");
+        printf("\t2.销毁队列\n");
+        printf("\t3.检查队列是否为空\n");
+        printf("\t4.查看队头元素\n");
+        printf("\t5.确定队列长度\n");
+        printf("\t6.入队操作\n");
+        printf("\t7.出队操作\n");
+        printf("\t8.清空队列\n");
+        printf("\t9.遍历函数操作\n");
+        printf("\t11.返回上一层\n");
+        printf("\t请输入一个数字\n");
+        printf("\t");
+        scanf("%d",&c);
+        system("cls");
+    switch(c)
+    {
+        case 1: InitLQueue(&LQ);
+                printf("初始化成功\n");
+                break;
+        case 2: DestoryLQueue(&LQ);
+                printf("销毁成功\n");
+                break;
+        case 3: if(IsEmptyLQueue(&LQ))printf("队列为空\n");
+                else printf("队列不为空\n");
+                break;
+        case 4: if(GetHeadLQueue(&LQ,head))
+                {
+                    LPrint(head);
+                }
+                else printf("获取失败\n");
+                break;
+        case 5: printf("队列长度为:%d",LengthLQueue(&LQ));
+                break;
+        case 6: printf("\t请输入入队元素的类型\n");
+                printf("\t1.字符型\n\t2.整形\n\t3.浮点型\n\t");
+                scanf("%d", &num);
+                printf("请输入数据:\n");
+                switch(num)
+                {
+                    case 1:scanf("%c",&ch); //字符型
+                           if(EnLQueue(&LQ,&ch))
+                                printf("入队成功\n");
+                            else
+                                printf("入队失败\n");
+                           break;
+                    case 2:scanf("%d",&intt); //整形
+                            if(EnLQueue(&LQ,&intt))
+                                printf("入队成功\n");
+                            else
+                                printf("入队失败\n");
+                           break;
+                    case 3:scanf("%f",&fl); //浮点型
+                           if(EnLQueue(&LQ,&fl))
+                                printf("入队成功\n");
+                            else
+                                printf("入队失败\n");
+                           break;
+                    default:printf("输入错误\n");
+                }
+                EnLQueue(&LQ, &input);
+                break;
+        case 7: if(DeLQueue(&LQ))
+                    printf("出队成功\n");
+                else
+                    printf("出队失败\n");
+                break;
+        case 8: ClearLQueue(&LQ);
+                break;
+        case 9:if(TraverseLQueue(&LQ,LPrint))
+                printf("遍历成功\n");
+                else    printf("遍历失败\n");
+        case 10: break;
+        default: printf("输入的数字不正确\n");
+                 break;
+    }
+    }while(c!=11);
  }
 int main()
 {
@@ -380,7 +563,7 @@ int main()
     {
         case 1: aQueue();
                 break;
-        case 2:
+        case 2: lQueue();
                 break;
         case 3: break;
         default: printf("输入的数字不正确\n");
